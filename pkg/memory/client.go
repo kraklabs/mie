@@ -8,7 +8,10 @@ package memory
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
+	"strconv"
+	"time"
 
 	"github.com/kraklabs/mie/pkg/storage"
 	"github.com/kraklabs/mie/pkg/tools"
@@ -241,4 +244,49 @@ func (c *Client) GetStats(ctx context.Context) (*tools.GraphStats, error) {
 
 func (c *Client) ExportGraph(ctx context.Context, opts tools.ExportOptions) (*tools.ExportData, error) {
 	return c.reader.ExportGraph(ctx, opts)
+}
+
+// IncrementCounter atomically increments a counter in mie_meta and updates
+// the corresponding last_*_at timestamp.
+func (c *Client) IncrementCounter(ctx context.Context, key string) error {
+	// Read current value.
+	readScript := fmt.Sprintf(`?[value] := *mie_meta{key: '%s', value}`, escapeDatalog(key))
+	result, err := c.backend.Query(ctx, readScript)
+
+	current := 0
+	if err == nil && len(result.Rows) > 0 {
+		if v, parseErr := strconv.Atoi(toString(result.Rows[0][0])); parseErr == nil {
+			current = v
+		}
+	}
+
+	// Write incremented value.
+	next := strconv.Itoa(current + 1)
+	writeScript := fmt.Sprintf(
+		`?[key, value] <- [['%s', '%s']] :put mie_meta {key => value}`,
+		escapeDatalog(key), next,
+	)
+	if err := c.backend.Execute(ctx, writeScript); err != nil {
+		return fmt.Errorf("increment counter %s: %w", key, err)
+	}
+
+	// Update the corresponding timestamp.
+	tsKey := ""
+	switch key {
+	case "total_queries":
+		tsKey = "last_query_at"
+	case "total_stores":
+		tsKey = "last_store_at"
+	}
+	if tsKey != "" {
+		now := strconv.FormatInt(time.Now().Unix(), 10)
+		tsScript := fmt.Sprintf(
+			`?[key, value] <- [['%s', '%s']] :put mie_meta {key => value}`,
+			tsKey, now,
+		)
+		// Best-effort: ignore timestamp write errors.
+		_ = c.backend.Execute(ctx, tsScript)
+	}
+
+	return nil
 }

@@ -55,6 +55,9 @@ func Store(ctx context.Context, client Querier, args map[string]any) (*ToolResul
 		relMsg = storeRelationships(ctx, client, nodeID, rels)
 	}
 
+	// Increment usage counter (never fail the main operation).
+	_ = client.IncrementCounter(ctx, "total_stores")
+
 	output := fmt.Sprintf("Stored %s [%s]\n%s", nodeType, nodeID, summary)
 	if relMsg != "" {
 		output += "\n\nRelationships created:\n" + relMsg

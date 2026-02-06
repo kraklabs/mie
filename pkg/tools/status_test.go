@@ -23,6 +23,10 @@ func TestStatus_PopulatedGraph(t *testing.T) {
 				TotalEvents:      8,
 				TotalTopics:      5,
 				TotalEdges:       89,
+				TotalQueries:     42,
+				TotalStores:      15,
+				LastQueryAt:      1738853400,
+				LastStoreAt:      1738848900,
 				SchemaVersion:    "1",
 				StorageEngine:    "sqlite",
 				StoragePath:      "~/.mie/data/default/index.db",
@@ -50,6 +54,11 @@ func TestStatus_PopulatedGraph(t *testing.T) {
 		"sqlite",
 		"Embeddings: enabled",
 		"Schema version: 1",
+		"### Usage",
+		"Total queries: 42",
+		"Total stores: 15",
+		"Last query:",
+		"Last store:",
 	}
 	for _, check := range checks {
 		if !strings.Contains(result.Text, check) {
@@ -79,5 +88,8 @@ func TestStatus_EmptyGraph(t *testing.T) {
 	}
 	if !strings.Contains(result.Text, "Embeddings: disabled") {
 		t.Error("Status() should show embeddings disabled")
+	}
+	if strings.Contains(result.Text, "### Usage") {
+		t.Error("Status() should not show Usage section when counters are zero")
 	}
 }

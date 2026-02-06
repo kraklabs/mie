@@ -29,10 +29,6 @@ func TestDefaultConfig(t *testing.T) {
 	assert.NotEmpty(t, cfg.Embedding.BaseURL)
 	assert.NotEmpty(t, cfg.Embedding.Model)
 
-	assert.False(t, cfg.LLM.Enabled)
-	assert.NotEmpty(t, cfg.LLM.BaseURL)
-	assert.NotEmpty(t, cfg.LLM.Model)
-	assert.Equal(t, 2000, cfg.LLM.MaxTokens)
 }
 
 func TestConfigEnvOverrides(t *testing.T) {
@@ -79,11 +75,6 @@ embedding:
   model: text-embedding-3-small
   dimensions: 1536
   workers: 2
-llm:
-  enabled: true
-  base_url: http://localhost:8080
-  model: llama3
-  max_tokens: 4000
 `
 	require.NoError(t, os.WriteFile(configPath, []byte(yaml), 0600))
 
@@ -104,10 +95,6 @@ llm:
 	assert.Equal(t, 1536, cfg.Embedding.Dimensions)
 	assert.Equal(t, 2, cfg.Embedding.Workers)
 
-	assert.True(t, cfg.LLM.Enabled)
-	assert.Equal(t, "http://localhost:8080", cfg.LLM.BaseURL)
-	assert.Equal(t, "llama3", cfg.LLM.Model)
-	assert.Equal(t, 4000, cfg.LLM.MaxTokens)
 }
 
 func TestConfigYAMLInvalidVersion(t *testing.T) {

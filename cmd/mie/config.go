@@ -26,7 +26,6 @@ type Config struct {
 	Version   string          `yaml:"version"`
 	Storage   StorageConfig   `yaml:"storage"`
 	Embedding EmbeddingConfig `yaml:"embedding"`
-	LLM       LLMConfig       `yaml:"llm,omitempty"`
 }
 
 // StorageConfig contains storage backend configuration.
@@ -46,15 +45,6 @@ type EmbeddingConfig struct {
 	Workers    int    `yaml:"workers"`
 }
 
-// LLMConfig holds LLM provider settings for narrative generation.
-type LLMConfig struct {
-	Enabled   bool   `yaml:"enabled"`
-	BaseURL   string `yaml:"base_url"`
-	Model     string `yaml:"model"`
-	MaxTokens int    `yaml:"max_tokens,omitempty"`
-	APIKey    string `yaml:"api_key,omitempty"`
-}
-
 // DefaultConfig returns a config with sensible defaults for local development.
 func DefaultConfig() *Config {
 	return &Config{
@@ -70,12 +60,6 @@ func DefaultConfig() *Config {
 			Model:      getEnv("OLLAMA_EMBED_MODEL", "nomic-embed-text"),
 			Dimensions: 768,
 			Workers:    4,
-		},
-		LLM: LLMConfig{
-			Enabled:   false,
-			BaseURL:   "http://localhost:11434",
-			Model:     "llama3",
-			MaxTokens: 2000,
 		},
 	}
 }
@@ -258,17 +242,6 @@ func (c *Config) applyEnvOverrides() {
 		}
 	}
 
-	// LLM overrides
-	if v := os.Getenv("MIE_LLM_URL"); v != "" {
-		c.LLM.BaseURL = v
-		c.LLM.Enabled = true
-	}
-	if v := os.Getenv("MIE_LLM_MODEL"); v != "" {
-		c.LLM.Model = v
-	}
-	if v := os.Getenv("MIE_LLM_API_KEY"); v != "" {
-		c.LLM.APIKey = v
-	}
 }
 
 // getEnv retrieves an environment variable or returns a fallback value if not set.

@@ -27,16 +27,25 @@ func Query(ctx context.Context, client Querier, args map[string]any) (*ToolResul
 		limit = 50
 	}
 
+	var result *ToolResult
+	var err error
 	switch mode {
 	case "semantic":
-		return querySemanticMode(ctx, client, query, nodeTypes, limit)
+		result, err = querySemanticMode(ctx, client, query, nodeTypes, limit)
 	case "exact":
-		return queryExactMode(ctx, client, query, nodeTypes, limit)
+		result, err = queryExactMode(ctx, client, query, nodeTypes, limit)
 	case "graph":
-		return queryGraphMode(ctx, client, args)
+		result, err = queryGraphMode(ctx, client, args)
 	default:
 		return NewError(fmt.Sprintf("Invalid mode %q. Must be one of: semantic, exact, graph", mode)), nil
 	}
+
+	// Increment usage counter on success (never fail the main operation).
+	if err == nil && result != nil && !result.IsError {
+		_ = client.IncrementCounter(ctx, "total_queries")
+	}
+
+	return result, err
 }
 
 func querySemanticMode(ctx context.Context, client Querier, query string, nodeTypes []string, limit int) (*ToolResult, error) {

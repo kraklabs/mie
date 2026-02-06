@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"log/slog"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -663,11 +664,40 @@ func (r *Reader) GetStats(ctx context.Context) (*tools.GraphStats, error) {
 	}
 	stats.TotalEdges = totalEdges
 
-	// Get schema version
-	verQuery := `?[value] := *mie_meta { key, value }, key = 'schema_version'`
-	verResult, err := r.backend.Query(ctx, verQuery)
-	if err == nil && len(verResult.Rows) > 0 {
-		stats.SchemaVersion = toString(verResult.Rows[0][0])
+	// Read metadata values (schema version, counters, timestamps).
+	metaKeys := []struct {
+		key    string
+		setter func(string)
+	}{
+		{"schema_version", func(v string) { stats.SchemaVersion = v }},
+		{"total_queries", func(v string) {
+			if n, err := strconv.Atoi(v); err == nil {
+				stats.TotalQueries = n
+			}
+		}},
+		{"total_stores", func(v string) {
+			if n, err := strconv.Atoi(v); err == nil {
+				stats.TotalStores = n
+			}
+		}},
+		{"last_query_at", func(v string) {
+			if n, err := strconv.ParseInt(v, 10, 64); err == nil {
+				stats.LastQueryAt = n
+			}
+		}},
+		{"last_store_at", func(v string) {
+			if n, err := strconv.ParseInt(v, 10, 64); err == nil {
+				stats.LastStoreAt = n
+			}
+		}},
+	}
+
+	for _, mk := range metaKeys {
+		q := fmt.Sprintf(`?[value] := *mie_meta { key, value }, key = '%s'`, mk.key)
+		result, err := r.backend.Query(ctx, q)
+		if err == nil && len(result.Rows) > 0 {
+			mk.setter(toString(result.Rows[0][0]))
+		}
 	}
 
 	return stats, nil

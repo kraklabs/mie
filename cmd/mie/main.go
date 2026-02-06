@@ -13,6 +13,7 @@
 //	mie status [--json]           Show memory graph status
 //	mie reset --yes               Delete all memory data
 //	mie export [--format json]    Export memory graph
+//	mie import [--format json]    Import memory graph
 //	mie query <script>            Execute CozoScript query
 package main
 
@@ -73,6 +74,7 @@ Commands:
   status        Show memory graph status
   reset         Delete all memory data (destructive!)
   export        Export memory graph
+  import        Import memory graph
   query         Execute CozoScript query (debugging)
 
 Global Options:
@@ -89,6 +91,7 @@ Examples:
   mie status                       Show memory stats
   mie status --json                Output as JSON
   mie export --format json         Export all data
+  mie import --input backup.json   Import from file
   mie query "?[name] := *mie_entity{name} :limit 10"
 
 Getting Started:
@@ -154,6 +157,8 @@ Environment Variables:
 		runReset(cmdArgs, *configPath, globals)
 	case "export":
 		runExport(cmdArgs, *configPath, globals)
+	case "import":
+		runImport(cmdArgs, *configPath, globals)
 	case "query":
 		runQuery(cmdArgs, *configPath, globals)
 	default:

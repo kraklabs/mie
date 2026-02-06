@@ -290,3 +290,44 @@ func TestStore_StorageError(t *testing.T) {
 		t.Error("Error should include underlying error message")
 	}
 }
+
+func TestStore_IncrementsCounter(t *testing.T) {
+	var counterKey string
+	mock := &MockQuerier{
+		IncrementCounterFunc: func(ctx context.Context, key string) error {
+			counterKey = key
+			return nil
+		},
+	}
+	result, err := Store(context.Background(), mock, map[string]any{
+		"type":    "fact",
+		"content": "Test counter increment",
+	})
+	if err != nil {
+		t.Fatalf("Store() error = %v", err)
+	}
+	if result.IsError {
+		t.Fatalf("Store() returned error: %s", result.Text)
+	}
+	if counterKey != "total_stores" {
+		t.Errorf("Expected IncrementCounter called with %q, got %q", "total_stores", counterKey)
+	}
+}
+
+func TestStore_CounterErrorDoesNotFailStore(t *testing.T) {
+	mock := &MockQuerier{
+		IncrementCounterFunc: func(ctx context.Context, key string) error {
+			return fmt.Errorf("counter write failed")
+		},
+	}
+	result, err := Store(context.Background(), mock, map[string]any{
+		"type":    "fact",
+		"content": "Test counter error ignored",
+	})
+	if err != nil {
+		t.Fatalf("Store() error = %v", err)
+	}
+	if result.IsError {
+		t.Error("Store() should succeed even when counter increment fails")
+	}
+}

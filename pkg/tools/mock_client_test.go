@@ -31,6 +31,7 @@ type MockQuerier struct {
 	CheckNewFactConflictsFunc func(ctx context.Context, content, category string) ([]Conflict, error)
 	GetStatsFunc             func(ctx context.Context) (*GraphStats, error)
 	ExportGraphFunc          func(ctx context.Context, opts ExportOptions) (*ExportData, error)
+	IncrementCounterFunc     func(ctx context.Context, key string) error
 	EmbeddingsEnabledFunc    func() bool
 }
 
@@ -193,6 +194,13 @@ func (m *MockQuerier) ExportGraph(ctx context.Context, opts ExportOptions) (*Exp
 		return m.ExportGraphFunc(ctx, opts)
 	}
 	return &ExportData{Version: "1", ExportedAt: "2026-02-05T00:00:00Z", Stats: map[string]int{}}, nil
+}
+
+func (m *MockQuerier) IncrementCounter(ctx context.Context, key string) error {
+	if m.IncrementCounterFunc != nil {
+		return m.IncrementCounterFunc(ctx, key)
+	}
+	return nil
 }
 
 func (m *MockQuerier) EmbeddingsEnabled() bool {

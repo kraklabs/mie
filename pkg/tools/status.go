@@ -7,6 +7,7 @@ package tools
 import (
 	"context"
 	"fmt"
+	"time"
 )
 
 // Status returns memory graph health and statistics.
@@ -58,6 +59,19 @@ func Status(ctx context.Context, client Querier, args map[string]any) (*ToolResu
 		sb += "- Embeddings enabled\n"
 	} else {
 		sb += "- Embeddings disabled (semantic search unavailable)\n"
+	}
+
+	// Usage metrics
+	if stats.TotalQueries > 0 || stats.TotalStores > 0 {
+		sb += "\n### Usage\n"
+		sb += fmt.Sprintf("- Total queries: %d\n", stats.TotalQueries)
+		sb += fmt.Sprintf("- Total stores: %d\n", stats.TotalStores)
+		if stats.LastQueryAt > 0 {
+			sb += fmt.Sprintf("- Last query: %s\n", time.Unix(stats.LastQueryAt, 0).UTC().Format("2006-01-02 15:04:05"))
+		}
+		if stats.LastStoreAt > 0 {
+			sb += fmt.Sprintf("- Last store: %s\n", time.Unix(stats.LastStoreAt, 0).UTC().Format("2006-01-02 15:04:05"))
+		}
 	}
 
 	return NewResult(sb), nil

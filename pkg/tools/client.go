@@ -45,6 +45,9 @@ type Querier interface {
 	GetStats(ctx context.Context) (*GraphStats, error)
 	ExportGraph(ctx context.Context, opts ExportOptions) (*ExportData, error)
 
+	// Metrics
+	IncrementCounter(ctx context.Context, key string) error
+
 	// Configuration
 	EmbeddingsEnabled() bool
 }
@@ -224,6 +227,10 @@ type GraphStats struct {
 	TotalEvents      int    `json:"total_events"`
 	TotalTopics      int    `json:"total_topics"`
 	TotalEdges       int    `json:"total_edges"`
+	TotalQueries     int    `json:"total_queries"`
+	TotalStores      int    `json:"total_stores"`
+	LastQueryAt      int64  `json:"last_query_at,omitempty"`
+	LastStoreAt      int64  `json:"last_store_at,omitempty"`
 	SchemaVersion    string `json:"schema_version"`
 	StorageEngine    string `json:"storage_engine"`
 	StoragePath      string `json:"storage_path"`
