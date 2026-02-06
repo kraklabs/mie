@@ -248,4 +248,4 @@ We welcome contributions. See [contributing.md](docs/contributing.md) for guidel
 
 ---
 
-Built by [KrakLabs](https://kraklabs.com) · Makers of [CIE](https://github.com/kraklabs/cie) and MIE
+Built by [Kraklabs](https://kraklabs.com) · Makers of [CIE](https://github.com/kraklabs/cie) and MIE
