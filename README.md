@@ -69,7 +69,8 @@ brew install mie
 ### 2. Initialize
 
 ```bash
-mie init
+mie init                    # Quick setup with defaults
+mie init --interview        # Interactive — asks about your stack, team, and project
 ```
 
 ### 3. Connect to your AI agents
@@ -123,22 +124,25 @@ These connect through typed relationships — a decision references entities, re
 
 ## MCP Tools
 
-MIE exposes 8 tools through the Model Context Protocol:
+MIE exposes 9 tools through the Model Context Protocol:
 
 | Tool | What it does |
 |---|---|
 | `mie_analyze` | Surfaces related context before storing — the agent decides what's worth remembering |
 | `mie_store` | Writes facts, decisions, entities, events, and relationships to the graph |
+| `mie_bulk_store` | Batch store up to 50 nodes with cross-references — ideal for importing knowledge from files or git history |
 | `mie_query` | Semantic search, exact lookup, or graph traversal across all node types |
 | `mie_list` | List and filter nodes with pagination |
 | `mie_update` | Invalidate outdated facts, update statuses — with full history preserved |
 | `mie_conflicts` | Detect contradictions in stored knowledge |
 | `mie_export` | Export the full graph as JSON or Datalog |
-| `mie_status` | Graph health, node counts, configuration |
+| `mie_status` | Graph health, node counts, usage metrics |
 
 ### Zero Server-Side Inference
 
 Unlike other memory solutions that run an LLM on the server to classify what to store, MIE uses an **agent-as-evaluator** pattern. The server provides context; your agent (which is already running an LLM) decides what matters. This means zero additional inference cost — your memory layer doesn't burn tokens.
+
+This philosophy extends to importing: when you ask your agent to "import knowledge from this repo", the agent reads your files, ADRs, or git history directly and uses `mie_bulk_store` to persist what it extracts. MIE stays as a pure storage engine — the connected agent IS the LLM.
 
 ## Architecture
 
@@ -150,7 +154,7 @@ Unlike other memory solutions that run an LLM on the server to classify what to 
                │ MCP (JSON-RPC over stdio)
 ┌──────────────▼──────────────────────┐
 │  MIE Server                         │
-│  8 tools · semantic search ·        │
+│  9 tools · semantic search ·        │
 │  graph traversal · conflicts        │
 └──────────────┬──────────────────────┘
                │ Datalog queries
@@ -196,9 +200,11 @@ All settings can be overridden with environment variables. Embeddings are option
 
 ```bash
 mie init                    # Create config with defaults
+mie init --interview        # Interactive project bootstrapping
 mie --mcp                   # Start as MCP server
 mie status                  # Show graph statistics
 mie export                  # Export memory graph
+mie import -i backup.json   # Import from JSON or Datalog
 mie reset --yes             # Delete all data
 mie query "<cozoscript>"    # Raw Datalog query (debug)
 ```
@@ -227,11 +233,12 @@ CIE gives your agent deep understanding of your codebase. MIE gives it memory of
 
 ## Roadmap
 
+- [x] Import from ADRs, markdown, and git history (agent-driven self-import)
+- [ ] Git post-commit hook — auto-capture decisions from commits
 - [ ] Browser extension — auto-capture knowledge from claude.ai, chatgpt.com, gemini
 - [ ] MIE Cloud — sync across devices, team shared memory
 - [ ] ChatGPT integration via custom GPT Actions
 - [ ] Web UI for exploring and managing your knowledge graph
-- [ ] Import from existing ADRs, Notion, Confluence
 
 **Join the waitlist:** [kraklabs.com/mie](https://kraklabs.com/mie)
 
