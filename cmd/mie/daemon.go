@@ -72,6 +72,9 @@ func runDaemonStart(args []string, configPath string, _ GlobalFlags) {
 			os.Exit(ExitGeneral)
 		}
 
+		// Reap the child in background to avoid zombie when daemon exits.
+		go cmd.Wait()
+
 		// Verify the process is still alive after startup period.
 		time.Sleep(500 * time.Millisecond)
 		if err := cmd.Process.Signal(syscall.Signal(0)); err != nil {
@@ -170,6 +173,12 @@ func runDaemonStart(args []string, configPath string, _ GlobalFlags) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
+	// When running as PID 1 (e.g. in a container without tini), reap
+	// orphaned child processes to prevent zombie accumulation.
+	if os.Getpid() == 1 {
+		reapChildren()
+	}
 
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGTERM, syscall.SIGINT)
@@ -279,6 +288,9 @@ func connectOrStartDaemon(configPath string) (*storage.SocketBackend, error) {
 		return nil, fmt.Errorf("start daemon: %w", err)
 	}
 
+	// Reap the child in background to avoid zombie when daemon exits.
+	go cmd.Wait()
+
 	// Verify process is still alive after a brief startup period.
 	time.Sleep(300 * time.Millisecond)
 	if err := cmd.Process.Signal(syscall.Signal(0)); err != nil {
@@ -302,4 +314,23 @@ func connectOrStartDaemon(configPath string) (*storage.SocketBackend, error) {
 	}
 
 	return nil, fmt.Errorf("daemon started but cannot connect after retries: %w", err)
+}
+
+// reapChildren installs a SIGCHLD handler that reaps terminated child
+// processes. This prevents zombie accumulation when the daemon runs as
+// PID 1 in a container without an init process like tini.
+func reapChildren() {
+	sigchld := make(chan os.Signal, 32)
+	signal.Notify(sigchld, syscall.SIGCHLD)
+	go func() {
+		for range sigchld {
+			for {
+				var ws syscall.WaitStatus
+				pid, err := syscall.Wait4(-1, &ws, syscall.WNOHANG, nil)
+				if pid <= 0 || err != nil {
+					break
+				}
+			}
+		}
+	}()
 }
