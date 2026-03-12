@@ -5,6 +5,12 @@ All notable changes to MIE (Memory Intelligence Engine) will be documented in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.6] - 2026-03-12
+
+### Fixed
+
+- **Fork bomb in daemon start**: `forkDaemonBackground` and `connectOrStartDaemon` spawned `mie daemon start` without `--foreground`, so each child re-forked indefinitely (~1 fork/500ms). The forked child now runs with `--foreground` to enter the actual daemon serve loop
+
 ## [1.3.5] - 2026-03-12
 
 ### Fixed

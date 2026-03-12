@@ -179,7 +179,7 @@ func forkDaemonBackground(configPath string) {
 		os.Exit(ExitGeneral)
 	}
 
-	cmdArgs := []string{"daemon", "start"}
+	cmdArgs := []string{"daemon", "start", "--foreground"}
 	if configPath != "" {
 		cmdArgs = append([]string{"--config", configPath}, cmdArgs...)
 	}
@@ -281,7 +281,7 @@ func connectOrStartDaemon(configPath string) (*storage.SocketBackend, error) {
 		return nil, fmt.Errorf("find executable: %w", err)
 	}
 
-	cmdArgs := []string{"daemon", "start"}
+	cmdArgs := []string{"daemon", "start", "--foreground"}
 	if configPath != "" {
 		cmdArgs = append([]string{"--config", configPath}, cmdArgs...)
 	}

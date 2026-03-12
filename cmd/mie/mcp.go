@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	mcpVersion    = "1.3.5" // Reap child processes to prevent zombie accumulation
+	mcpVersion    = "1.3.6" // Fix fork bomb: pass --foreground to forked daemon child
 	mcpServerName = "mie"
 )
 
