@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	mcpVersion    = "1.3.4" // Fix --foreground flag parsing in daemon subcommand
+	mcpVersion    = "1.3.5" // Reap child processes to prevent zombie accumulation
 	mcpServerName = "mie"
 )
 

@@ -5,6 +5,13 @@ All notable changes to MIE (Memory Intelligence Engine) will be documented in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.5] - 2026-03-12
+
+### Fixed
+
+- Daemon child processes left as zombies: `runDaemonStart` and `connectOrStartDaemon` now call `cmd.Wait()` in a background goroutine after `cmd.Start()` to reap the forked daemon process
+- Zombie accumulation when daemon runs as PID 1 in a container without tini: a `SIGCHLD` handler with `Wait4(WNOHANG)` now reaps orphaned child processes automatically
+
 ## [1.3.4] - 2026-02-15
 
 ### Fixed
