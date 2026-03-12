@@ -51,38 +51,7 @@ func runDaemonStart(args []string, configPath string, _ GlobalFlags) {
 	_ = fs.Parse(args)
 
 	if !*foreground {
-		exe, err := os.Executable()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: cannot find executable: %v\n", err)
-			os.Exit(ExitGeneral)
-		}
-
-		cmdArgs := []string{"daemon", "start"}
-		if configPath != "" {
-			cmdArgs = append([]string{"--config", configPath}, cmdArgs...)
-		}
-
-		cmd := exec.Command(exe, cmdArgs...)
-		cmd.Stdout = nil
-		cmd.Stderr = nil
-		cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
-
-		if err := cmd.Start(); err != nil {
-			fmt.Fprintf(os.Stderr, "Error: cannot start daemon: %v\n", err)
-			os.Exit(ExitGeneral)
-		}
-
-		// Reap the child in background to avoid zombie when daemon exits.
-		go cmd.Wait()
-
-		// Verify the process is still alive after startup period.
-		time.Sleep(500 * time.Millisecond)
-		if err := cmd.Process.Signal(syscall.Signal(0)); err != nil {
-			fmt.Fprintf(os.Stderr, "Error: daemon process died during startup\n")
-			os.Exit(ExitGeneral)
-		}
-
-		fmt.Fprintf(os.Stderr, "MIE daemon started (PID %d)\n", cmd.Process.Pid)
+		forkDaemonBackground(configPath)
 		return
 	}
 
@@ -201,6 +170,43 @@ func runDaemonStart(args []string, configPath string, _ GlobalFlags) {
 	fmt.Fprintf(os.Stderr, "MIE daemon stopped.\n")
 }
 
+// forkDaemonBackground forks the daemon into a new session and returns.
+// The child is reaped in a background goroutine to avoid zombies.
+func forkDaemonBackground(configPath string) {
+	exe, err := os.Executable()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: cannot find executable: %v\n", err)
+		os.Exit(ExitGeneral)
+	}
+
+	cmdArgs := []string{"daemon", "start"}
+	if configPath != "" {
+		cmdArgs = append([]string{"--config", configPath}, cmdArgs...)
+	}
+
+	cmd := exec.Command(exe, cmdArgs...)
+	cmd.Stdout = nil
+	cmd.Stderr = nil
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
+
+	if err := cmd.Start(); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: cannot start daemon: %v\n", err)
+		os.Exit(ExitGeneral)
+	}
+
+	// Reap the child in background to avoid zombie when daemon exits.
+	go func() { _ = cmd.Wait() }()
+
+	// Verify the process is still alive after startup period.
+	time.Sleep(500 * time.Millisecond)
+	if err := cmd.Process.Signal(syscall.Signal(0)); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: daemon process died during startup\n")
+		os.Exit(ExitGeneral)
+	}
+
+	fmt.Fprintf(os.Stderr, "MIE daemon started (PID %d)\n", cmd.Process.Pid)
+}
+
 func runDaemonStop() {
 	pidPath := storage.DefaultPIDPath()
 	data, err := os.ReadFile(pidPath)
@@ -289,7 +295,7 @@ func connectOrStartDaemon(configPath string) (*storage.SocketBackend, error) {
 	}
 
 	// Reap the child in background to avoid zombie when daemon exits.
-	go cmd.Wait()
+	go func() { _ = cmd.Wait() }()
 
 	// Verify process is still alive after a brief startup period.
 	time.Sleep(300 * time.Millisecond)
