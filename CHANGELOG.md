@@ -5,6 +5,12 @@ All notable changes to MIE (Memory Intelligence Engine) will be documented in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.7] - 2026-03-16
+
+### Added
+
+- **MCP tool filtering**: New `mcp.include_tools` and `mcp.exclude_tools` options in `config.yaml` to control which tools are exposed to MCP clients. `include_tools` acts as a whitelist (only listed tools are available), `exclude_tools` acts as a blacklist (all tools except listed ones are available). When both are set, `include_tools` takes precedence. Filtered tools are hidden from `tools/list` and rejected on `tools/call`. Fully backward compatible — omitting both fields exposes all tools as before.
+
 ## [1.3.6] - 2026-03-12
 
 ### Fixed

@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	mcpVersion    = "1.3.6" // Fix fork bomb: pass --foreground to forked daemon child
+	mcpVersion    = "1.3.7" // Add mcp.include_tools / mcp.exclude_tools config filtering
 	mcpServerName = "mie"
 )
 
@@ -504,6 +504,13 @@ func (s *mcpServer) handleToolCall(ctx context.Context, params mcpToolCallParams
 		}, nil
 	}
 
+	if !s.isToolAllowed(params.Name) {
+		return &mcpToolResult{
+			Content: []mcpContent{{Type: "text", Text: fmt.Sprintf("Tool %q is disabled by configuration", params.Name)}},
+			IsError: true,
+		}, nil
+	}
+
 	result, err := handler(ctx, s, params.Arguments)
 	if err != nil {
 		return &mcpToolResult{
@@ -518,8 +525,60 @@ func (s *mcpServer) handleToolCall(ctx context.Context, params mcpToolCallParams
 	}, nil
 }
 
-// getTools returns the list of all MIE MCP tool definitions.
+// getTools returns the list of MIE MCP tool definitions, filtered by the
+// mcp.include_tools / mcp.exclude_tools config when present.
 func (s *mcpServer) getTools() []mcpTool {
+	all := s.allTools()
+	if len(s.config.MCP.IncludeTools) > 0 {
+		allow := make(map[string]struct{}, len(s.config.MCP.IncludeTools))
+		for _, name := range s.config.MCP.IncludeTools {
+			allow[name] = struct{}{}
+		}
+		filtered := make([]mcpTool, 0, len(allow))
+		for _, t := range all {
+			if _, ok := allow[t.Name]; ok {
+				filtered = append(filtered, t)
+			}
+		}
+		return filtered
+	}
+	if len(s.config.MCP.ExcludeTools) > 0 {
+		deny := make(map[string]struct{}, len(s.config.MCP.ExcludeTools))
+		for _, name := range s.config.MCP.ExcludeTools {
+			deny[name] = struct{}{}
+		}
+		filtered := make([]mcpTool, 0, len(all))
+		for _, t := range all {
+			if _, ok := deny[t.Name]; !ok {
+				filtered = append(filtered, t)
+			}
+		}
+		return filtered
+	}
+	return all
+}
+
+// isToolAllowed reports whether the named tool passes the
+// mcp.include_tools / mcp.exclude_tools filter.
+func (s *mcpServer) isToolAllowed(name string) bool {
+	if inc := s.config.MCP.IncludeTools; len(inc) > 0 {
+		for _, allowed := range inc {
+			if allowed == name {
+				return true
+			}
+		}
+		return false
+	}
+	for _, denied := range s.config.MCP.ExcludeTools {
+		if denied == name {
+			return false
+		}
+	}
+	return true
+}
+
+// allTools returns the complete list of MIE MCP tool definitions.
+func (s *mcpServer) allTools() []mcpTool {
 	return []mcpTool{
 		{
 			Name:        "mie_analyze",

@@ -207,9 +207,21 @@ embedding:
   enabled: true
   provider: ollama        # ollama, openai, or nomic
   model: nomic-embed-text
+mcp:
+  # Option A: only expose these tools (whitelist)
+  include_tools:
+    - mie_analyze
+    - mie_store
+    - mie_query
+  # Option B: expose all except these (blacklist)
+  # exclude_tools:
+  #   - mie_export
+  #   - mie_repair
 ```
 
 All settings can be overridden with environment variables. Embeddings are optional — MIE works without them (exact search only).
+
+The `mcp` section is optional. When omitted, all 12 tools are exposed. Use `include_tools` to whitelist specific tools, or `exclude_tools` to hide a few. If both are set, `include_tools` takes precedence. Filtered tools are also rejected on `tools/call`.
 
 ## CLI
 

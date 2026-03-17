@@ -26,6 +26,17 @@ type Config struct {
 	Version   string          `yaml:"version"`
 	Storage   StorageConfig   `yaml:"storage"`
 	Embedding EmbeddingConfig `yaml:"embedding"`
+	MCP       MCPConfig       `yaml:"mcp"`
+}
+
+// MCPConfig contains MCP server configuration.
+type MCPConfig struct {
+	// IncludeTools whitelists tools by name; only these are exposed.
+	// Takes precedence over ExcludeTools when both are set.
+	IncludeTools []string `yaml:"include_tools,omitempty"`
+	// ExcludeTools blacklists tools by name; all others are exposed.
+	// Ignored when IncludeTools is non-empty.
+	ExcludeTools []string `yaml:"exclude_tools,omitempty"`
 }
 
 // StorageConfig contains storage backend configuration.
